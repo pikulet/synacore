@@ -14,5 +14,10 @@ class Stack:
 
         return self.__data.pop()
 
+    def peek(self) -> bytearray:
+        if len(self.__data) == 0:
+            raise StackUnderflowException()
+
+        return self.__data[0]
 class StackUnderflowException(SynacoreException):
     pass

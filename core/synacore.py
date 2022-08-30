@@ -54,9 +54,9 @@ class Synacore:
                 case Opcode.ADD:
                     return self.__execute_add()
                 case Opcode.MULT:
-                    pass
+                    return self.__execute_mult()
                 case Opcode.MOD:
-                    pass
+                    return self.__execute_mod()
                 case Opcode.AND:
                     return self.__execute_and()
                 case Opcode.OR:
@@ -64,13 +64,13 @@ class Synacore:
                 case Opcode.NOT:
                     return self.__execute_not()
                 case Opcode.RMEM:
-                    pass
+                    return self.__execute_rmem()
                 case Opcode.WMEM:
-                    pass
+                    return self.__execute_wmem()
                 case Opcode.CALL:
-                    pass
+                    return self.__execute_call()
                 case Opcode.RET:
-                    pass
+                    return self.__execute_ret()
                 case Opcode.OUT:
                     return self.__execute_out()
                 case Opcode.IN:
@@ -100,7 +100,8 @@ class Synacore:
         if value < MODULO_BASE:
             return value
         elif value <= REGISTER_MAX:
-            return self.__registers.get(Converter.ValueToRegisterIndex(value))
+            data = self.__registers.get(Converter.ValueToRegisterIndex(value))
+            return Converter.BytesToInt(data)
         else:
             raise InvalidValueException(value)
 
@@ -227,14 +228,24 @@ class Synacore:
         mult: 10 a b c
         store into <a> the product of <b> and <c> (modulo 32768)
         """
-        pass
+        a = self.__read_next_in_memory()
+        b = self.__evaluate_next_in_memory()
+        c = self.__evaluate_next_in_memory()
+
+        result = ALU.mult(b, c)
+        self.__set(a, result)
 
     def __execute_mod(self):
         """
         mod: 11 a b c
         store into <a> the remainder of <b> divided by <c>
         """
-        pass
+        a = self.__read_next_in_memory()
+        b = self.__evaluate_next_in_memory()
+        c = self.__evaluate_next_in_memory()
+
+        result = ALU.mod(b, c)
+        self.__set(a, result)
 
     def __execute_and(self):
         """
@@ -276,28 +287,38 @@ class Synacore:
         rmem: 15 a b
         read memory at address <b> and write it to <a>
         """
-        pass
+        a = self.__read_next_in_memory()
+        b = self.__read_next_in_memory()
+
+        value = self.__memory.get(b)
+        self.__set_raw(a, value)
 
     def __execute_wmem(self):
         """
         wmem: 16 a b
         write the value from <b> into memory at address <a>
         """
-        pass
+        a = self.__read_next_in_memory()
+        b = self.__evaluate_next_in_memory()
+
+        self.__set(a, b)
 
     def __execute_call(self):
         """
         call: 17 a
         write the address of the next instruction to the stack and jump to <a>
         """
-        pass
+        a = self.__evaluate_next_in_memory()
+        self.__stack.push(self.__instruction_ptr)
+        self.__instruction_ptr = a
 
     def __execute_ret(self):
         """
         ret: 18
         remove the top element from the stack and jump to it; empty stack = halt
         """
-        pass
+        value = Converter.BytesToInt(self.__stack.pop())
+        self.__instruction_ptr = value
 
     def __execute_out(self):
         """
