@@ -17,5 +17,10 @@ class Opcode(Enum):
     AND = 12
     OR = 13
     NOT = 14
+    RMEM = 15
+    WMEM = 16
+    CALL = 17
+    RET = 18
     OUT = 19
+    IN = 20
     NOOP = 21

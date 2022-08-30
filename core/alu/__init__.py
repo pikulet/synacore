@@ -1,1 +1,1 @@
-from .alu import ArithmeticLogicUnit as ALU
+from .alu import ALU
