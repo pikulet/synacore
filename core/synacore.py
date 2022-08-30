@@ -1,3 +1,5 @@
+from audioop import add
+from lib2to3.pgen2.token import OP
 from core.common.const import *
 from core.common.exception import SynacoreException
 from core.common.util import Converter
@@ -18,6 +20,7 @@ class Synacore:
         self.__instruction_ptr = 0
 
     def run(self):
+        self.__instruction_ptr = 845
         while True:
             try:
                 exit = self.__run_next_instruction()
@@ -31,7 +34,6 @@ class Synacore:
 
         try:
             opcode = self.__read_next_in_memory()
-
             match Opcode(opcode):
                 case Opcode.HALT:
                     return self.__execute_halt()
@@ -93,7 +95,8 @@ class Synacore:
         return result
 
     def __read_next_in_memory(self) -> int:
-        return Converter.BytesToInt(self.__read_next_raw_in_memory())
+        result = Converter.BytesToInt(self.__read_next_raw_in_memory())
+        return result
 
     def __evaluate_next_in_memory(self) -> int:
         value = self.__read_next_in_memory()
@@ -104,6 +107,14 @@ class Synacore:
             return Converter.BytesToInt(data)
         else:
             raise InvalidValueException(value)
+
+    def __get_raw(self, address: int) -> bytearray:
+        if address < MODULO_BASE:
+            return self.__memory.get(address)
+        elif address <= REGISTER_MAX:
+            return self.__registers.get(Converter.ValueToRegisterIndex(address))
+        else:
+            raise InvalidAddressException(address)
 
     ## setters
     def __set_raw(self, address: int, value: bytearray):
@@ -167,6 +178,7 @@ class Synacore:
         c = self.__evaluate_next_in_memory()
 
         result = ALU.equals(b, c)
+        print('equals', b, c)
         self.__set(a, result)
 
     def __execute_gt(self):
@@ -290,7 +302,8 @@ class Synacore:
         a = self.__read_next_in_memory()
         b = self.__read_next_in_memory()
 
-        value = self.__memory.get(b)
+        value = self.__get_raw(b)
+        print(value)
         self.__set_raw(a, value)
 
     def __execute_wmem(self):
@@ -300,7 +313,6 @@ class Synacore:
         """
         a = self.__read_next_in_memory()
         b = self.__evaluate_next_in_memory()
-
         self.__set(a, b)
 
     def __execute_call(self):
@@ -357,3 +369,8 @@ class InvalidOpcodeException(SynacoreException):
 class InvalidValueException(SynacoreException):
     def __init__(self, value: int):
         super().__init__(value)
+
+
+class InvalidAddressException(SynacoreException):
+    def __init__(self, address: int):
+        super().__init__(address)
