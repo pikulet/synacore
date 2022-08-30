@@ -1,7 +1,7 @@
 import sys
 
-class IO:
 
+class IO:
     @staticmethod
     def output(s: str):
         sys.stdout.write(s)

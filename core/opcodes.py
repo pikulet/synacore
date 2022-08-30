@@ -1,5 +1,6 @@
 from enum import Enum
 
+
 class Opcode(Enum):
     HALT = 0
     SET = 1

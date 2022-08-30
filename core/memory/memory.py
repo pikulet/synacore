@@ -1,9 +1,10 @@
 from audioop import add
 from sys import byteorder
-from .const import *
+from core.common.const import *
+from core.common.util import Converter
+
 
 class Memory:
-    
     def __init__(self, initial_memory: bytearray):
         # memory
         self.__data = initial_memory
@@ -12,5 +13,7 @@ class Memory:
         self.__data.extend(bytearray(extension_length))
 
     def get(self, address: int) -> int:
-        byte_data = self.__data[NUM_BYTES_PER_WORD * address: NUM_BYTES_PER_WORD * (address + 1)]
-        return int.from_bytes(byte_data, "little", signed="false")
+        byte_data = self.__data[
+            NUM_BYTES_PER_WORD * address : NUM_BYTES_PER_WORD * (address + 1)
+        ]
+        return Converter.BytesToInt(byte_data)
