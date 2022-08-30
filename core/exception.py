@@ -1,0 +1,2 @@
+class SynacoreException(Exception):
+    pass

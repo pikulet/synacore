@@ -5,6 +5,7 @@ from .const import *
 class Memory:
     
     def __init__(self, initial_memory: bytearray):
+        # memory
         self.__data = initial_memory
         num_indexable_bytes = 2**MEM_ADDRESS_SPACE * NUM_BYTES_PER_WORD
         extension_length = num_indexable_bytes - len(self.__data)
