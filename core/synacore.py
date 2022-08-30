@@ -58,11 +58,11 @@ class Synacore:
                 case Opcode.MOD:
                     pass
                 case Opcode.AND:
-                    pass
+                    return self.__execute_and()
                 case Opcode.OR:
-                    pass
+                    return self.__execute_or()
                 case Opcode.NOT:
-                    pass
+                    return self.__execute_not()
                 case Opcode.RMEM:
                     pass
                 case Opcode.WMEM:
@@ -225,7 +225,8 @@ class Synacore:
     def __execute_mult(self):
         """
         mult: 10 a b c
-        store into <a> the product of <b> and <c> (modulo 32768)"""
+        store into <a> the product of <b> and <c> (modulo 32768)
+        """
         pass
 
     def __execute_mod(self):
@@ -238,22 +239,37 @@ class Synacore:
     def __execute_and(self):
         """
         and: 12 a b c
-        stores into <a> the bitwise and of <b> and <c>"""
-        pass
+        stores into <a> the bitwise and of <b> and <c>
+        """
+        a = self.__read_next_in_memory()
+        b = self.__evaluate_next_in_memory()
+        c = self.__evaluate_next_in_memory()
+
+        result = ALU.bitwise_and(b, c)
+        self.__set(a, result)
 
     def __execute_or(self):
         """
         or: 13 a b c
         stores into <a> the bitwise or of <b> and <c>
         """
-        pass
+        a = self.__read_next_in_memory()
+        b = self.__evaluate_next_in_memory()
+        c = self.__evaluate_next_in_memory()
+
+        result = ALU.bitwise_or(b, c)
+        self.__set(a, result)
 
     def __execute_not(self):
         """
         not: 14 a b
         stores 15-bit bitwise inverse of <b> in <a>
         """
-        pass
+        a = self.__read_next_in_memory()
+        b = self.__evaluate_next_in_memory()
+
+        result = ALU.bitwise_inverse(b)
+        self.__set(a, result)
 
     def __execute_rmem(self):
         """
