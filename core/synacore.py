@@ -21,7 +21,7 @@ class Synacore:
         self.__logger = Logger()
 
     def run(self):
-        self.__instruction_ptr = 0
+        self.__instruction_ptr = 869
         while True:
             try:
                 exit = self.__run_next_instruction()
@@ -35,6 +35,9 @@ class Synacore:
 
         try:
             opcode = self.__read_next_address_in_memory()
+            self.__logger.debug(
+                self.__instruction_ptr - 1, "|", Opcode(opcode)
+            )
             match Opcode(opcode):
                 case Opcode.HALT:
                     return self.__execute_halt()
@@ -77,7 +80,7 @@ class Synacore:
                 case Opcode.OUT:
                     return self.__execute_out()
                 case Opcode.IN:
-                    pass
+                    return self.__execute_in()
                 case Opcode.NOOP:
                     return self.__execute_noop()
 
@@ -114,7 +117,9 @@ class Synacore:
         if address < MODULO_BASE:
             return self.__memory.get(address)
         elif address <= REGISTER_MAX:
-            reg_value = Converter.BytesToInt(self.__registers.get(Converter.ValueToRegisterIndex(address)))
+            reg_value = Converter.BytesToInt(
+                self.__registers.get(Converter.ValueToRegisterIndex(address))
+            )
             result = self.__get_from_memory(reg_value)
             return result
         else:
@@ -139,6 +144,9 @@ class Synacore:
     def __set(self, address: int, value: int, in_memory=False):
         return self.__set_raw(address, Converter.IntToBytes(value), in_memory)
 
+    def __input(self) -> str:
+        return self.__io.input()
+
     def __output(self, s):
         self.__io.output(s)
 
@@ -157,6 +165,7 @@ class Synacore:
 
         a = self.__read_next_address_in_memory()
         b = self.__read_next_raw_in_memory()
+        self.__logger.debug("    ", a, b)
 
         index = Converter.ValueToRegisterIndex(a)
         self.__registers.set(index, b)
@@ -167,6 +176,7 @@ class Synacore:
         push <a> onto the
         """
         a = self.__evaluate_next_literal_in_memory()
+        self.__logger.debug("    ", a)
 
         self.__stack.push(Converter.IntToBytes(a))
 
@@ -176,6 +186,7 @@ class Synacore:
         remove the top element from the stack and write it into <a>; empty stack = error
         """
         a = self.__read_next_address_in_memory()
+        self.__logger.debug("    ", a)
 
         self.__set_raw(a, self.__stack.pop())
 
@@ -187,6 +198,7 @@ class Synacore:
         a = self.__read_next_address_in_memory()
         b = self.__evaluate_next_literal_in_memory()
         c = self.__evaluate_next_literal_in_memory()
+        self.__logger.debug("    ", a, b, c)
 
         result = ALU.equals(b, c)
         self.__set(a, result)
@@ -199,6 +211,7 @@ class Synacore:
         a = self.__read_next_address_in_memory()
         b = self.__evaluate_next_literal_in_memory()
         c = self.__evaluate_next_literal_in_memory()
+        self.__logger.debug("    ", a, b, c)
 
         result = ALU.greater_than(b, c)
         self.__set(a, result)
@@ -209,6 +222,7 @@ class Synacore:
         jump to <a>
         """
         a = self.__read_next_address_in_memory()
+        self.__logger.debug("    ", a)
 
         self.__instruction_ptr = a
 
@@ -219,6 +233,7 @@ class Synacore:
         """
         a = self.__evaluate_next_literal_in_memory()
         b = self.__read_next_address_in_memory()
+        self.__logger.debug("    ", a, b)
 
         if a != 0:
             self.__instruction_ptr = b
@@ -230,6 +245,7 @@ class Synacore:
         """
         a = self.__evaluate_next_literal_in_memory()
         b = self.__read_next_address_in_memory()
+        self.__logger.debug("    ", a, b)
 
         if a == 0:
             self.__instruction_ptr = b
@@ -242,6 +258,7 @@ class Synacore:
         a = self.__read_next_address_in_memory()
         b = self.__evaluate_next_literal_in_memory()
         c = self.__evaluate_next_literal_in_memory()
+        self.__logger.debug("    ", a, b, c)
 
         result = ALU.add(b, c)
         self.__set(a, result)
@@ -254,6 +271,7 @@ class Synacore:
         a = self.__read_next_address_in_memory()
         b = self.__evaluate_next_literal_in_memory()
         c = self.__evaluate_next_literal_in_memory()
+        self.__logger.debug("    ", a, b, c)
 
         result = ALU.mult(b, c)
         self.__set(a, result)
@@ -266,6 +284,7 @@ class Synacore:
         a = self.__read_next_address_in_memory()
         b = self.__evaluate_next_literal_in_memory()
         c = self.__evaluate_next_literal_in_memory()
+        self.__logger.debug("    ", a, b, c)
 
         result = ALU.mod(b, c)
         self.__set(a, result)
@@ -278,6 +297,7 @@ class Synacore:
         a = self.__read_next_address_in_memory()
         b = self.__evaluate_next_literal_in_memory()
         c = self.__evaluate_next_literal_in_memory()
+        self.__logger.debug("    ", a, b, c)
 
         result = ALU.bitwise_and(b, c)
         self.__set(a, result)
@@ -290,6 +310,7 @@ class Synacore:
         a = self.__read_next_address_in_memory()
         b = self.__evaluate_next_literal_in_memory()
         c = self.__evaluate_next_literal_in_memory()
+        self.__logger.debug("    ", a, b, c)
 
         result = ALU.bitwise_or(b, c)
         self.__set(a, result)
@@ -301,6 +322,7 @@ class Synacore:
         """
         a = self.__read_next_address_in_memory()
         b = self.__evaluate_next_literal_in_memory()
+        self.__logger.debug("    ", a, b)
 
         result = ALU.bitwise_inverse(b)
         self.__set(a, result)
@@ -312,6 +334,7 @@ class Synacore:
         """
         a = self.__read_next_address_in_memory()
         b = self.__read_next_address_in_memory()
+        self.__logger.debug("    ", a, b)
 
         value = self.__get_from_memory(b)
         self.__set_raw(a, value)
@@ -323,6 +346,7 @@ class Synacore:
         """
         a = self.__read_next_address_in_memory()
         b = self.__evaluate_next_literal_in_memory()
+        self.__logger.debug("    ", a, b)
 
         self.__set(a, b, in_memory=True)
 
@@ -332,6 +356,7 @@ class Synacore:
         write the address of the next instruction to the stack and jump to <a>
         """
         a = self.__evaluate_next_literal_in_memory()
+        self.__logger.debug("    ", a)
 
         self.__stack.push(Converter.IntToBytes(self.__instruction_ptr))
         self.__instruction_ptr = a
@@ -358,7 +383,12 @@ class Synacore:
         in: 20 a
         read a character from the terminal and write its ascii code to <a>; it can be assumed that once input starts, it will continue until a newline is encountered; this means that you can safely read whole lines from the keyboard and trust that they will be fully read
         """
-        pass
+        a = self.__read_next_address_in_memory()
+        self.__logger.debug("    ", a)
+
+        result = self.__input()
+        ascii_code = ord(result[0])
+        self.__set(a, ascii_code)
 
     def __execute_noop(self):
         """

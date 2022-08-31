@@ -8,4 +8,4 @@ class IO:
 
     @staticmethod
     def input() -> str:
-        pass
+        return sys.stdin.readline()
