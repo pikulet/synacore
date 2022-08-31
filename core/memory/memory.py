@@ -19,4 +19,4 @@ class Memory:
     def set(self, address: int, value: bytearray) -> bytearray:
         start_pos = NUM_BYTES_PER_WORD * address
         for index in range(NUM_BYTES_PER_WORD):
-            self.__data[start_pos + index] = bytearray[index]
+            self.__data[start_pos + index] = value[index]

@@ -101,38 +101,46 @@ class Synacore:
 
     def __evaluate_next_literal_in_memory(self) -> int:
         value = self.__read_next_address_in_memory()
-        self.__logger.debug("           | address", self.__instruction_ptr - 1, "literal", value)
         if value < MODULO_BASE:
             return value
         elif value <= REGISTER_MAX:
             data = self.__registers.get(Converter.ValueToRegisterIndex(value))
-            return Converter.BytesToInt(data)
+            result = Converter.BytesToInt(data)
+            return result
         else:
             raise InvalidValueException(value)
 
-    def __get_raw(self, address: int) -> bytearray:
+    def __get_from_memory(self, address: int) -> bytearray:
         if address < MODULO_BASE:
             return self.__memory.get(address)
         elif address <= REGISTER_MAX:
-            return self.__registers.get(Converter.ValueToRegisterIndex(address))
+            reg_value = Converter.BytesToInt(self.__registers.get(Converter.ValueToRegisterIndex(address)))
+            result = self.__get_from_memory(reg_value)
+            return result
         else:
             raise InvalidAddressException(address)
 
     ## setters
-    def __set_raw(self, address: int, value: bytearray):
+    def __set_raw(self, address: int, value: bytearray, in_memory=False):
         if address < MODULO_BASE:
             self.__memory.set(address, value)
         elif address <= REGISTER_MAX:
-            self.__registers.set(Converter.ValueToRegisterIndex(address), value)
+            reg_index = Converter.ValueToRegisterIndex(address)
+            if not in_memory:
+                self.__registers.set(reg_index, value)
+                return
+
+            # enforce set in memory
+            reg_value = Converter.BytesToInt(self.__registers.get(reg_index))
+            self.__set_raw(reg_value, value, True)
         else:
             raise InvalidValueException(value)
 
-    def __set(self, address: int, value: int):
-        return self.__set_raw(address, Converter.IntToBytes(value))
+    def __set(self, address: int, value: int, in_memory=False):
+        return self.__set_raw(address, Converter.IntToBytes(value), in_memory)
 
     def __output(self, s):
-        # self.__io.output(s)
-        pass
+        self.__io.output(s)
 
     def __execute_halt(self) -> bool:
         """
@@ -147,10 +155,8 @@ class Synacore:
         set register <a> to the value of <b>
         """
 
-        self.__logger.debug("set")
         a = self.__read_next_address_in_memory()
         b = self.__read_next_raw_in_memory()
-        self.__logger.debug("       args", a, b)
 
         index = Converter.ValueToRegisterIndex(a)
         self.__registers.set(index, b)
@@ -160,40 +166,29 @@ class Synacore:
         push: 2 a
         push <a> onto the
         """
-        self.__logger.debug("push")
         a = self.__evaluate_next_literal_in_memory()
-        self.__logger.debug("       args", a)
 
-        self.__stack.push(a)
+        self.__stack.push(Converter.IntToBytes(a))
 
     def __execute_pop(self):
         """
         pop: 3 a
         remove the top element from the stack and write it into <a>; empty stack = error
         """
-        self.__logger.debug("pop")
         a = self.__read_next_address_in_memory()
-        self.__logger.debug("       args", a)
 
-        value = self.__stack.pop()
-        self.__logger.debug("       result", value)
-
-        self.__set(a, value)
+        self.__set_raw(a, self.__stack.pop())
 
     def __execute_eq(self):
         """
         eq: 4 a b c
         set <a> to 1 if <b> is equal to <c>; set it to 0 otherwise
         """
-        self.__logger.debug("eq")
         a = self.__read_next_address_in_memory()
         b = self.__evaluate_next_literal_in_memory()
         c = self.__evaluate_next_literal_in_memory()
-        self.__logger.debug("       args", a, b, c)
 
         result = ALU.equals(b, c)
-        self.__logger.debug("       result", result)
-
         self.__set(a, result)
 
     def __execute_gt(self):
@@ -201,15 +196,11 @@ class Synacore:
         gt: 5 a b c
         set <a> to 1 if <b> is greater than <c>; set it to 0 otherwise
         """
-        self.__logger.debug("gt")
         a = self.__read_next_address_in_memory()
         b = self.__evaluate_next_literal_in_memory()
         c = self.__evaluate_next_literal_in_memory()
-        self.__logger.debug("       args", a, b, c)
 
         result = ALU.greater_than(b, c)
-        self.__logger.debug("       result", result)
-
         self.__set(a, result)
 
     def __execute_jmp(self):
@@ -217,9 +208,7 @@ class Synacore:
         jmp: 6 a
         jump to <a>
         """
-        self.__logger.debug("jmp")
         a = self.__read_next_address_in_memory()
-        self.__logger.debug("       args", a)
 
         self.__instruction_ptr = a
 
@@ -228,10 +217,8 @@ class Synacore:
         jt: 7 a b
         if <a> is nonzero, jump to <b>
         """
-        self.__logger.debug("jt")
         a = self.__evaluate_next_literal_in_memory()
         b = self.__read_next_address_in_memory()
-        self.__logger.debug("       args", a, b)
 
         if a != 0:
             self.__instruction_ptr = b
@@ -241,10 +228,8 @@ class Synacore:
         jf: 8 a b
         if <a> is zero, jump to <b>
         """
-        self.__logger.debug("jf")
         a = self.__evaluate_next_literal_in_memory()
         b = self.__read_next_address_in_memory()
-        self.__logger.debug("       args", a, b)
 
         if a == 0:
             self.__instruction_ptr = b
@@ -254,14 +239,11 @@ class Synacore:
         add: 9 a b c
         assign into <a> the sum of <b> and <c> (modulo 32768)
         """
-        self.__logger.debug("add")
         a = self.__read_next_address_in_memory()
         b = self.__evaluate_next_literal_in_memory()
         c = self.__evaluate_next_literal_in_memory()
-        self.__logger.debug("       args", a, b, c)
 
         result = ALU.add(b, c)
-        self.__logger.debug("       result", result)
         self.__set(a, result)
 
     def __execute_mult(self):
@@ -269,14 +251,11 @@ class Synacore:
         mult: 10 a b c
         store into <a> the product of <b> and <c> (modulo 32768)
         """
-        self.__logger.debug("mult")
         a = self.__read_next_address_in_memory()
         b = self.__evaluate_next_literal_in_memory()
         c = self.__evaluate_next_literal_in_memory()
-        self.__logger.debug("       args", a, b, c)
 
         result = ALU.mult(b, c)
-        self.__logger.debug("       result", result)
         self.__set(a, result)
 
     def __execute_mod(self):
@@ -284,14 +263,11 @@ class Synacore:
         mod: 11 a b c
         store into <a> the remainder of <b> divided by <c>
         """
-        self.__logger.debug("mod")
         a = self.__read_next_address_in_memory()
         b = self.__evaluate_next_literal_in_memory()
         c = self.__evaluate_next_literal_in_memory()
-        self.__logger.debug("       args", a, b, c)
 
         result = ALU.mod(b, c)
-        self.__logger.debug("       result", result)
         self.__set(a, result)
 
     def __execute_and(self):
@@ -299,15 +275,11 @@ class Synacore:
         and: 12 a b c
         stores into <a> the bitwise and of <b> and <c>
         """
-        self.__logger.debug("add")
         a = self.__read_next_address_in_memory()
         b = self.__evaluate_next_literal_in_memory()
         c = self.__evaluate_next_literal_in_memory()
-        self.__logger.debug("       args", a, b, c)
 
         result = ALU.bitwise_and(b, c)
-        self.__logger.debug("       result", result)
-
         self.__set(a, result)
 
     def __execute_or(self):
@@ -315,15 +287,11 @@ class Synacore:
         or: 13 a b c
         stores into <a> the bitwise or of <b> and <c>
         """
-        self.__logger.debug("or")
         a = self.__read_next_address_in_memory()
         b = self.__evaluate_next_literal_in_memory()
         c = self.__evaluate_next_literal_in_memory()
-        self.__logger.debug("       args", a, b, c)
 
         result = ALU.bitwise_or(b, c)
-        self.__logger.debug("       result", result)
-
         self.__set(a, result)
 
     def __execute_not(self):
@@ -331,14 +299,10 @@ class Synacore:
         not: 14 a b
         stores 15-bit bitwise inverse of <b> in <a>
         """
-        self.__logger.debug("not")
         a = self.__read_next_address_in_memory()
         b = self.__evaluate_next_literal_in_memory()
-        self.__logger.debug("       args", a, b)
 
         result = ALU.bitwise_inverse(b)
-        self.__logger.debug("       result", result)
-
         self.__set(a, result)
 
     def __execute_rmem(self):
@@ -346,13 +310,10 @@ class Synacore:
         rmem: 15 a b
         read memory at address <b> and write it to <a>
         """
-        self.__logger.debug("rmem")
         a = self.__read_next_address_in_memory()
         b = self.__read_next_address_in_memory()
-        self.__logger.debug("       args", a, b)
 
-        value = self.__get_raw(b)
-        self.__logger.debug("       result", value)
+        value = self.__get_from_memory(b)
         self.__set_raw(a, value)
 
     def __execute_wmem(self):
@@ -362,18 +323,17 @@ class Synacore:
         """
         a = self.__read_next_address_in_memory()
         b = self.__evaluate_next_literal_in_memory()
-        self.__set(a, b)
+
+        self.__set(a, b, in_memory=True)
 
     def __execute_call(self):
         """
         call: 17 a
         write the address of the next instruction to the stack and jump to <a>
         """
-        self.__logger.debug("call")
         a = self.__evaluate_next_literal_in_memory()
-        self.__logger.debug("       args", a)
 
-        self.__stack.push(self.__instruction_ptr)
+        self.__stack.push(Converter.IntToBytes(self.__instruction_ptr))
         self.__instruction_ptr = a
 
     def __execute_ret(self):
@@ -381,7 +341,6 @@ class Synacore:
         ret: 18
         remove the top element from the stack and jump to it; empty stack = halt
         """
-        self.__logger.debug("ret")
         value = Converter.BytesToInt(self.__stack.pop())
         self.__instruction_ptr = value
 
