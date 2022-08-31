@@ -1,5 +1,5 @@
 from core.common.const import NUM_BYTES_PER_WORD
-from core.common.util import Converter
+from pprint import pprint
 
 
 class Registers:
@@ -11,3 +11,6 @@ class Registers:
 
     def set(self, index: int, value: bytearray):
         self.__registers[index] = value
+
+    def inspect(self):
+        pprint(self.__registers)

@@ -1,7 +1,7 @@
 from core.common.exception import SynacoreException
 
-class Stack:
 
+class Stack:
     def __init__(self):
         self.__data = list()
 
@@ -19,5 +19,7 @@ class Stack:
             raise StackUnderflowException()
 
         return self.__data[0]
+
+
 class StackUnderflowException(SynacoreException):
     pass

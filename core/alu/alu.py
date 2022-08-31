@@ -5,7 +5,6 @@ class ALU:
     def sanitise(value: int) -> int:
         return value % MODULO_BASE
 
-
     @staticmethod
     def equals(a: int, b: int) -> int:
         return ALU.sanitise(int(a == b))
@@ -29,7 +28,7 @@ class ALU:
     @staticmethod
     def bitwise_and(a: int, b: int) -> int:
         return ALU.sanitise(a & b)
-    
+
     @staticmethod
     def bitwise_or(a: int, b: int) -> int:
         return ALU.sanitise(a | b)
